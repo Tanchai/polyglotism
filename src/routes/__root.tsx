@@ -3,6 +3,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 
 import '../styles.css'
 import { IdentityProvider } from '../lib/identity-context'
+import { CallbackHandler } from '../components/CallbackHandler'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -29,7 +30,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <IdentityProvider>{children}</IdentityProvider>
+        <CallbackHandler>
+  <IdentityProvider>{children}</IdentityProvider>
+</CallbackHandler>
         <Scripts />
       </body>
     </html>
