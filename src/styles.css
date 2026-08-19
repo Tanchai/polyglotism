@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+@import "tailwindcss" source("../");
+
+:root {
+  --ink: #24211c;
+  --paper: #f8f1e4;
+  --paper-raised: #fffcf5;
+  --shu: #c1440e;
+  --shu-dark: #9c360a;
+  --teal: #1d5c63;
+  --teal-dark: #123f44;
+  --gold: #d9a441;
+  --plum: #7a4988;
+  --line: #e4d8bd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  @apply m-0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: 'Kosugi Maru', 'Zen Kaku Gothic New', sans-serif;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: translateY(10px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-pop {
+  animation: pop-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake-x 0.4s ease-in-out;
+}
+
+.washi-texture {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(193, 68, 14, 0.05), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(29, 92, 99, 0.06), transparent 45%);
+}
