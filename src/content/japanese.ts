@@ -1,6 +1,8 @@
 // Static course content for the Japanese track. Content lives in code (like a
 // curriculum file) — only mutable per-user state (progress, streak, SRS) is in the database.
 
+import { topVocabulary } from './topVocabulary'
+
 export type ExerciseType =
   | 'multiple_choice'
   | 'word_bank'
@@ -8,12 +10,20 @@ export type ExerciseType =
   | 'speaking'
   | 'writing'
   | 'matching'
+  | 'chained_sentence'
+  | 'kanji_draw'
 
 export interface VocabItem {
   id: string
   jp: string
   reading: string
   en: string
+  /** Frequency rank out of the 1000 (lower = more common). Source: A Frequency Dictionary of Japanese (Routledge), derived from the BCCWJ corpus. */
+  rank?: number
+  /** Mnemonic hook — a vivid image/story to make the word stick. */
+  mnemonic?: string
+  /** Canonical sentence using this word (introduces it in context). */
+  example?: { jp: string; reading: string; en: string }
 }
 
 export interface MultipleChoiceExercise {
@@ -69,6 +79,43 @@ export interface MatchingExercise {
   vocabIds: string[]
 }
 
+/**
+ * Cumulative sentence-builder. `knownBank` holds the words the learner has already
+ * mastered; the target sentence stitches the NEW word(s) in with words they already
+ * own. This is the "use learned words together, simple to complex" mechanic.
+ */
+export interface ChainedSentenceExercise {
+  type: 'chained_sentence'
+  id: string
+  prompt: string
+  /** Vocabulary already learned in earlier lessons that this sentence reuses. */
+  knownBank: string[]
+  /** The correct sentence, in order. Must draw from knownBank plus newOption. */
+  correctOrder: string[]
+  /** The single brand-new word being introduced/memorised here. */
+  newWord: string
+  /** English gloss of the full sentence, shown after answering. */
+  gloss: string
+  vocabIds: string[]
+  /** Optional mnemonic hook shown on the answer screen to make the new word stick. */
+  mnemonic?: string
+}
+
+/** Trace-the-character exercise backed by KanjiVG stroke-order data. */
+export interface KanjiDrawExercise {
+  type: 'kanji_draw'
+  id: string
+  /** The character to draw. */
+  character: string
+  /** Reading shown as a hint. */
+  reading: string
+  /** English meaning of the character. */
+  meaning: string
+  /** Number of strokes the character has (from KanjiVG). */
+  strokeCount: number
+  vocabIds: string[]
+}
+
 export type Exercise =
   | MultipleChoiceExercise
   | WordBankExercise
@@ -76,6 +123,8 @@ export type Exercise =
   | SpeakingExercise
   | WritingExercise
   | MatchingExercise
+  | ChainedSentenceExercise
+  | KanjiDrawExercise
 
 export interface Lesson {
   id: string
@@ -131,7 +180,12 @@ export const japaneseCourse: Course = {
   flag: '🇯🇵',
   nativeName: '日本語',
   tagline: 'Greetings, sentence building, and everyday conversation',
-  vocab,
+  vocab: {
+    ...vocab,
+    // Merge in the frequency-ranked spoken-Japanese vocabulary so any word from
+    // the top ~862 lemmas is available to lessons and spaced repetition.
+    ...Object.fromEntries(topVocabulary.map((v) => [v.id, v])),
+  },
   units: [
     {
       id: 'u1',
@@ -574,6 +628,95 @@ export const japaneseCourse: Course = {
               accepted: ['ありがとう', 'arigatou'],
               hint: 'Five characters',
               vocabIds: ['arigatou'],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'u4',
+      title: 'First Sentences',
+      description: 'Chain words you know into real sentences',
+      color: '#1d5c63',
+      lessons: [
+        {
+          id: 'u4l1',
+          title: 'I See a Cat',
+          subtitle: 'みる + known words',
+          exercises: [
+            {
+              // Cumulative sentence: "t see" is the new word; everything else is known
+              // words from earlier lessons. The learner weaves the new verb in.
+              type: 'chained_sentence',
+              id: 'u4l1e1',
+              prompt: 'Build: "I see a cat"',
+              knownBank: ['わたし', 'は', 'ねこ', 'を'],
+              newWord: 'みる',
+              correctOrder: ['わたし', 'は', 'ねこ', 'を', 'みる'],
+              gloss: 'Watashi wa neko o miru. — I see a cat.',
+              mnemonic: 'You MEER (みる) the cat 🐱 — "I see" is みる.',
+              vocabIds: ['v13', 'watashi', 'neko'],
+            },
+            {
+              type: 'chained_sentence',
+              id: 'u4l1e2',
+              prompt: 'Build: "I am a person"',
+              knownBank: ['わたし', 'は', 'です'],
+              newWord: 'ひと',
+              correctOrder: ['わたし', 'は', 'ひと', 'です'],
+              gloss: 'Watashi wa hito desu. — I am a person.',
+              mnemonic: 'A person walks past the sun をとこ... picture a HITp-ONE (ひと) ☝️',
+              vocabIds: ['v18', 'watashi', 'desu'],
+            },
+            {
+              // Drawing the kanji for "person".
+              type: 'kanji_draw',
+              id: 'u4l1e3',
+              character: '人',
+              reading: 'ひと',
+              meaning: 'person',
+              strokeCount: 2,
+              vocabIds: ['v18'],
+            },
+            {
+              type: 'multiple_choice',
+              id: 'u4l1e4',
+              prompt: 'Which word means "person"?',
+              options: [
+                { id: 'a', text: 'みる' },
+                { id: 'b', text: '人' },
+                { id: 'c', text: 'ねこ' },
+                { id: 'd', text: 'わたし' },
+              ],
+              correctOptionId: 'b',
+              vocabIds: ['v18'],
+            },
+          ],
+        },
+        {
+          id: 'u4l2',
+          title: 'Getting Around',
+          subtitle: 'いく・どこ',
+          exercises: [
+            {
+              type: 'chained_sentence',
+              id: 'u4l2e1',
+              prompt: 'Build: "Where is the station?"',
+              knownBank: ['どこ', 'です', 'か'],
+              newWord: 'えき',
+              correctOrder: ['えき', 'は', 'どこ', 'です', 'か'],
+              gloss: 'Eki wa doko desu ka. — Where is the station?',
+              mnemonic: 'EKIda! Remember えき with the train station sign 🚉',
+              vocabIds: ['v3', 'v5'],
+            },
+            {
+              type: 'kanji_draw',
+              id: 'u4l2e2',
+              character: '口',
+              reading: 'くち',
+              meaning: 'mouth / opening',
+              strokeCount: 3,
+              vocabIds: ['v3'],
             },
           ],
         },

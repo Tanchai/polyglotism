@@ -17,6 +17,7 @@
     "@tanstack/store": "0.10.0",
     "chart.js": "4.5.1",
     "drizzle-orm": "1.0.0-beta.22",
+    "kanjivg-js": "^1.1.5",
     "lucide-react": "0.576.0",
     "react": "19.2.8",
     "react-chartjs-2": "5.3.1",

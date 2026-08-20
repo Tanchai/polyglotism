@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Volume2, Mic, Check, X } from 'lucide-react'
+import { KanjiVG } from 'kanjivg-js'
+import { KanjiCard } from 'kanjivg-js/react'
 import type { Exercise } from '@/content/japanese'
 
 function speak(text: string) {
@@ -90,6 +92,10 @@ function ExerciseBody({
       return <Writing exercise={exercise} checked={checked} onSubmit={onSubmit} />
     case 'matching':
       return <Matching exercise={exercise} checked={checked} onSubmit={onSubmit} />
+    case 'chained_sentence':
+      return <ChainedSentence exercise={exercise} checked={checked} onSubmit={onSubmit} />
+    case 'kanji_draw':
+      return <KanjiDraw exercise={exercise} checked={checked} onSubmit={onSubmit} />
   }
 }
 
@@ -139,7 +145,8 @@ function MultipleChoice({ exercise, checked, onSubmit }: any) {
 }
 
 function WordBank({ exercise, checked, onSubmit }: any) {
-  const shuffled = useMemo(() => shuffle(exercise.bank.map((w: string, i: number) => ({ word: w, key: i }))), [exercise.id])
+  const bankItems = exercise.bank.map((w: string, i: number) => ({ word: w, key: i })) as { word: string; key: number }[]
+  const shuffled: { word: string; key: number }[] = useMemo(() => shuffle(bankItems), [exercise.id])
   const [chosenKeys, setChosenKeys] = useState<number[]>([])
 
   const chosenWords = chosenKeys.map((k) => shuffled.find((s: any) => s.key === k)!.word)
@@ -341,7 +348,7 @@ function Matching({ exercise, checked, onSubmit }: any) {
     }
   }, [matched])
 
-  const pick = (side: 'left' | 'right', id: string, text: string) => {
+  const pick = (side: 'left' | 'right', id: string, _text: string) => {
     if (checked || matched.includes(id)) return
     if (side === 'left') {
       setSelectedLeft(id)
@@ -391,6 +398,254 @@ function Matching({ exercise, checked, onSubmit }: any) {
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+function ChainedSentence({ exercise, checked, onSubmit }: any) {
+  // The cumulative word bank = words the learner already owns + the one new word.
+  const pool = useMemo(
+    () =>
+      shuffle(
+        Array.from(new Set([...exercise.knownBank, exercise.newWord])).map((w, i) => ({ word: w, key: i })),
+      ),
+    [exercise.id],
+  )
+  const [chosenKeys, setChosenKeys] = useState<number[]>([])
+
+  const chosenWords = chosenKeys.map((k) => pool.find((s: any) => s.key === k)!.word)
+  const available = pool.filter((s: any) => !chosenKeys.includes(s.key))
+
+  const isCorrectOrder = JSON.stringify(chosenWords) === JSON.stringify(exercise.correctOrder)
+
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-widest font-bold mb-2" style={{ color: 'var(--teal)' }}>
+        Build the sentence with words you already know
+      </p>
+      <h3 className="font-display text-2xl mb-1">{exercise.prompt}</h3>
+      <p className="text-sm mb-4" style={{ color: 'var(--plum)' }}>
+        ✨ New word: <strong>{exercise.newWord}</strong> — weave it in with words you've mastered!
+      </p>
+
+      <div className="min-h-16 flex flex-wrap gap-2 mb-6 pb-3 border-b-2" style={{ borderColor: 'var(--line)' }}>
+        {chosenKeys.map((k, i) => (
+          <button
+            key={k}
+            disabled={checked}
+            onClick={() => setChosenKeys((c) => c.filter((_, idx) => idx !== i))}
+            className="px-4 py-2 rounded-xl font-display text-lg text-white"
+            style={{ background: 'var(--ink)' }}
+          >
+            {pool.find((s: any) => s.key === k)!.word}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {available.map((s: any) => (
+          <button
+            key={s.key}
+            disabled={checked}
+            onClick={() => setChosenKeys((c) => [...c, s.key])}
+            className="px-4 py-2 rounded-xl font-display text-lg border-2"
+            style={{ borderColor: s.word === exercise.newWord ? 'var(--plum)' : 'var(--line)', background: 'var(--paper-raised)' }}
+          >
+            {s.word}
+          </button>
+        ))}
+      </div>
+
+      {!checked && (
+        <button
+          disabled={chosenKeys.length === 0}
+          onClick={() => onSubmit(isCorrectOrder)}
+          className="mt-2 px-6 py-2.5 rounded-xl font-bold text-white disabled:opacity-40"
+          style={{ background: 'var(--ink)' }}
+        >
+          Check
+        </button>
+      )}
+
+      {checked && (
+        <div className="mt-4 p-4 rounded-2xl" style={{ background: 'rgba(122,73,136,0.08)' }}>
+          <p className="font-display text-xl mb-1">{exercise.correctOrder.join(' ')}</p>
+          <p className="text-sm" style={{ color: '#8a8272' }}>{exercise.gloss}</p>
+          {exercise.mnemonic && (
+            <p className="mt-2 text-sm font-semibold" style={{ color: 'var(--plum)' }}>
+              🧠 {exercise.mnemonic}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KanjiDraw({ exercise, checked, onSubmit }: any) {
+  const [strokes, setStrokes] = useState(0)
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-widest font-bold mb-2" style={{ color: 'var(--teal)' }}>
+        Trace the character
+      </p>
+      <h3 className="font-display text-2xl mb-1">
+        {exercise.character} <span className="text-base ml-1" style={{ color: '#8a8272' }}>{exercise.reading} · {exercise.meaning}</span>
+      </h3>
+      <p className="text-sm mb-4">Draw {exercise.character} in the box — {exercise.strokeCount} stroke{exercise.strokeCount === 1 ? '' : 's'}</p>
+
+      <StrokeOrderModel character={exercise.character} />
+
+      <DrawCanvas onChange={onSubmit} setStrokes={setStrokes} checked={checked} />
+
+      {checked && (
+        <p className="mt-3 text-sm" style={{ color: '#8a8272' }}>
+          You drew {strokes} stroke{strokes === 1 ? '' : 's'} of {exercise.strokeCount}. Keep tracing — stroke order becomes muscle memory!
+        </p>
+      )}
+    </div>
+  )
+}
+
+function DrawCanvas({ onChange, setStrokes, checked }: any) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const drawing = useRef(false)
+  const penDown = useRef(false)
+  const strokesRef = useRef(0)
+  const hasDrawn = useRef(false)
+
+  const pos = (e: any) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const rect = canvas.getBoundingClientRect()
+    const t = e.touches ? e.touches[0] : e
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top }
+  }
+
+  const start = (e: any) => {
+    e.preventDefault()
+    if (checked) return
+    drawing.current = true
+    penDown.current = false
+    const { x, y } = pos(e)
+    const ctx = canvasRef.current!.getContext('2d')!
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+  }
+  const move = (e: any) => {
+    if (!drawing.current) return
+    e.preventDefault()
+    const { x, y } = pos(e)
+    const ctx = canvasRef.current!.getContext('2d')!
+    if (!penDown.current) {
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      penDown.current = true
+      strokesRef.current += 1
+      setStrokes?.(strokesRef.current)
+      hasDrawn.current = true
+    }
+    ctx.lineWidth = 10
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = 'var(--ink)'
+    ctx.lineTo(x, y)
+    ctx.stroke()
+  }
+  const end = () => {
+    drawing.current = false
+    penDown.current = false
+  }
+  const clear = () => {
+    const ctx = canvasRef.current!.getContext('2d')!
+    ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height)
+    strokesRef.current = 0
+    setStrokes?.(0)
+  }
+
+  return (
+    <div>
+      <canvas
+        ref={canvasRef}
+        width={280}
+        height={280}
+        onMouseDown={start}
+        onMouseMove={move}
+        onMouseUp={end}
+        onMouseLeave={end}
+        onTouchStart={start}
+        onTouchMove={move}
+        onTouchEnd={end}
+        className="w-full max-w-[300px] aspect-square rounded-2xl border-4 touch-none"
+        style={{ borderColor: 'var(--line)', background: 'var(--paper-raised)' }}
+      />
+      <div className="flex items-center gap-3 mt-3 mb-4">
+        <button onClick={clear} className="px-4 py-2 rounded-xl border-2 text-sm font-semibold" style={{ borderColor: 'var(--line)' }}>
+          Clear
+        </button>
+        {!checked && (
+          <button
+            disabled={!hasDrawn.current}
+            onClick={() => onChange(true)}
+            className="px-6 py-2 rounded-xl font-bold text-white disabled:opacity-40"
+            style={{ background: 'var(--ink)' }}
+          >
+            Check — did it match?
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Client-only stroke-order model from the KanjiVG dataset. Shows the correct
+ * stroke order + a faint trace guide that the learner can copy while tracing.
+ * Renders nothing during SSR to avoid touching the DOM server-side.
+ */
+function StrokeOrderModel({ character }: { character: string }) {
+  const [mounted, setMounted] = useState(false)
+  const [strokeCount, setStrokeCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+    let alive = true
+    new KanjiVG()
+      .getKanji(character)
+      .then((list: any[]) => {
+        if (alive && list && list.length > 0) setStrokeCount(list[0].strokeCount)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [character])
+
+  if (!mounted) return null
+
+  return (
+    <div className="mb-1 text-center">
+      <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--shu)' }}>
+        Watch the stroke order
+      </p>
+      <KanjiCard
+        kanji={character}
+        animationOptions={{
+          strokeSpeed: 1400,
+          strokeDelay: 350,
+          loop: true,
+          showNumbers: true,
+          showTrace: true,
+          strokeStyling: { strokeColour: '#000000', strokeThickness: 4, strokeRadius: 1 },
+          traceStyling: { traceColour: '#c8c2b4', traceThickness: 3, traceRadius: 0 },
+          numberStyling: { fontColour: '#b33333', fontWeight: 600, fontSize: 11 },
+        }}
+      />
+      {strokeCount !== null && (
+        <p className="text-xs" style={{ color: '#8a8272' }}>
+          {strokeCount} strokes
+        </p>
+      )}
     </div>
   )
 }
