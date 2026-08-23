@@ -34,7 +34,7 @@ function LoginPage() {
     try {
       if (isSignup) {
         const u = await signup(email, password, { full_name: name })
-        if (u.emailVerified) {
+        if (u.confirmedAt) {
           refresh()
           navigate({ to: '/learn' })
         } else {

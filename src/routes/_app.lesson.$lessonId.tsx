@@ -12,6 +12,7 @@ function findLesson(lessonId: string) {
     for (const unit of course.units) {
       const lesson = unit.lessons.find((l) => l.id === lessonId)
       if (lesson) return { course, unit, lesson }
+      if (unit.exam?.id === lessonId) return { course, unit, lesson: unit.exam }
     }
   }
   return null

@@ -59,7 +59,14 @@ function ProfilePage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-display text-3xl mb-1">{user?.name || user?.email}</h1>
-          <p style={{ color: '#8a8272' }}>Learning {japaneseCourse.title} {japaneseCourse.flag}</p>
+          <p style={{ color: '#8a8272' }}>
+            Learning {japaneseCourse.title} {japaneseCourse.flag}
+            {user?.lastSignInAt && (
+              <span className="block mt-0.5">
+                Last sign-in: {new Date(user.lastSignInAt).toLocaleString()}
+              </span>
+            )}
+          </p>
         </div>
         <button
           onClick={async () => {

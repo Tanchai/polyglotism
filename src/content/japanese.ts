@@ -131,6 +131,8 @@ export interface Lesson {
   title: string
   subtitle: string
   exercises: Exercise[]
+  /** `exam` lessons are optional fluency checks between units — they never gate progress. */
+  kind?: 'lesson' | 'exam'
 }
 
 export interface Unit {
@@ -139,6 +141,8 @@ export interface Unit {
   description: string
   color: string
   lessons: Lesson[]
+  /** Optional fluency exam at the end of the unit. Never blocks the next unit. */
+  exam?: Lesson
 }
 
 export interface Course {
@@ -149,6 +153,39 @@ export interface Course {
   tagline: string
   units: Unit[]
   vocab: Record<string, VocabItem>
+}
+
+/**
+ * Auto-builds an optional fluency exam for a unit: it curates a well-rounded mix
+ * of exercise types drawn from across the unit's lessons (one of each type present,
+ * then a fill to ~8). Deterministic and reuses existing, already-renderable exercise
+ * objects. Exams are optional — they never gate or block the next unit.
+ */
+function buildUnitExam(unit: Unit): Lesson {
+  const all = unit.lessons.flatMap((l) => l.exercises)
+  const picked: Exercise[] = []
+  const seenTypes = new Set<string>()
+  for (const e of all) {
+    if (!seenTypes.has(e.type)) {
+      seenTypes.add(e.type)
+      picked.push(e)
+    }
+  }
+  for (const e of all) {
+    if (picked.length >= 8) break
+    if (!picked.includes(e)) picked.push(e)
+  }
+  return {
+    id: `${unit.id}-exam`,
+    title: `${unit.title} Check`,
+    subtitle: 'Fluency exam · optional',
+    kind: 'exam',
+    exercises: picked,
+  }
+}
+
+function buildUnits(units: Unit[]): Unit[] {
+  return units.map((u) => ({ ...u, exam: buildUnitExam(u) }))
 }
 
 const vocab: Record<string, VocabItem> = {
@@ -186,7 +223,7 @@ export const japaneseCourse: Course = {
     // the top ~862 lemmas is available to lessons and spaced repetition.
     ...Object.fromEntries(topVocabulary.map((v) => [v.id, v])),
   },
-  units: [
+  units: buildUnits([
     {
       id: 'u1',
       title: 'First Words',
@@ -722,7 +759,7 @@ export const japaneseCourse: Course = {
         },
       ],
     },
-  ],
+  ]),
 }
 
 export const courses: Record<string, Course> = {
