@@ -34,7 +34,7 @@ function AppLayout() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="text-xl">🈴</span>
-            <span className="font-display text-lg hidden sm:inline">Kaiwa</span>
+            <span className="font-display text-lg hidden sm:inline">Duniya</span>
           </Link>
 
           <nav className="flex items-center gap-1 rounded-full p-1" style={{ background: 'var(--paper-raised)', border: '1px solid var(--line)' }}>

@@ -66,7 +66,7 @@ function LoginPage() {
       >
         <Link to="/" className="flex items-center gap-2 mb-8">
           <span className="text-2xl">🈴</span>
-          <span className="font-display text-xl">Kaiwa</span>
+          <span className="font-display text-xl">Duniya</span>
         </Link>
 
         {confirmSent ? (

@@ -62,3 +62,96 @@ code {
     radial-gradient(circle at 20% 20%, rgba(193, 68, 14, 0.05), transparent 40%),
     radial-gradient(circle at 80% 70%, rgba(29, 92, 99, 0.06), transparent 45%);
 }
+
+/* ─── Duniya: futuristic landing theme ─────────────────────── */
+.hero-bg {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(193, 68, 14, 0.22), transparent 48%),
+    radial-gradient(circle at 85% 30%, rgba(29, 92, 99, 0.35), transparent 52%),
+    radial-gradient(circle at 60% 85%, rgba(217, 164, 65, 0.16), transparent 46%),
+    linear-gradient(160deg, #10101a 0%, #141622 45%, #0c0f18 100%);
+}
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 40%, black 40%, transparent 85%);
+}
+
+@keyframes orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(28px, -34px) scale(1.1); }
+  50% { transform: translate(-22px, 18px) scale(0.94); }
+  75% { transform: translate(10px, 30px) scale(1.05); }
+}
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(42px);
+  animation: orb-drift 16s ease-in-out infinite;
+}
+
+@keyframes gradient-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.text-glow {
+  background: linear-gradient(90deg, #ff7a3c, #ffb35c, #46e0c2, #ff7a3c);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 7s ease-in-out infinite;
+}
+@keyframes shimmer-x {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shine-line {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+  background-size: 200% 100%;
+  animation: shimmer-x 5s linear infinite;
+}
+
+.glass {
+  background: linear-gradient(150deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.16);
+  backdrop-filter: blur(18px);
+}
+.glass-glow:hover {
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 18px 50px -12px rgba(70, 224, 194, 0.35);
+  transform: translateY(-2px);
+}
+.btn-neon {
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 0 26px rgba(255, 122, 60, 0.35);
+}
+.btn-neon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-150%);
+  transition: transform 0.6s ease;
+}
+.btn-neon:hover::after { transform: translateX(150%); }
+
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-x 34s linear infinite;
+}
+.chip-glass {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(8px);
+}
