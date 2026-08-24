@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Volume2, Mic, Check, X } from 'lucide-react'
-import { KanjiVG } from 'kanjivg-js'
 import type { Exercise } from '@/content/japanese'
 
 function speak(text: string) {
@@ -615,16 +614,16 @@ function StrokeOrderModel({ character }: { character: string }) {
 
   useEffect(() => {
     setMounted(true)
+    let alive = true
+    import('kanjivg-js')
+      .then((m) => new m.KanjiVG())
+      .then((kvg) => kvg.getKanji(character).then((list: any[]) => {
+        if (alive && list && list.length > 0) setStrokeCount(list[0].strokeCount)
+      }))
+      .catch(() => {})
     import('kanjivg-js/react')
       .then((m) => m.KanjiCard as unknown as typeof Card)
       .then(setCard)
-      .catch(() => {})
-    let alive = true
-    new KanjiVG()
-      .getKanji(character)
-      .then((list: any[]) => {
-        if (alive && list && list.length > 0) setStrokeCount(list[0].strokeCount)
-      })
       .catch(() => {})
     return () => {
       alive = false
