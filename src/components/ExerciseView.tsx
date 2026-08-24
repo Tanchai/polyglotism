@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Volume2, Mic, Check, X } from 'lucide-react'
 import { KanjiVG } from 'kanjivg-js'
-import { KanjiCard } from 'kanjivg-js/react'
 import type { Exercise } from '@/content/japanese'
 
 function speak(text: string) {
@@ -601,14 +600,25 @@ function DrawCanvas({ onChange, setStrokes, checked }: any) {
 /**
  * Client-only stroke-order model from the KanjiVG dataset. Shows the correct
  * stroke order + a faint trace guide that the learner can copy while tracing.
- * Renders nothing during SSR to avoid touching the DOM server-side.
+ * Renders nothing during SSR to avoid touching the DOM server-side — and KanjiCard
+ * is loaded via dynamic import so it never enters the server bundle (Netlify's SSR
+ * bundler would otherwise resolve 'kanjivg-js/react' to its CommonJS variant and
+ * fail on the named export at module load).
  */
 function StrokeOrderModel({ character }: { character: string }) {
   const [mounted, setMounted] = useState(false)
   const [strokeCount, setStrokeCount] = useState<number | null>(null)
+  const [Card, setCard] = useState<((props: {
+    kanji: string
+    animationOptions: Record<string, unknown>
+  }) => React.JSX.Element) | null>(null)
 
   useEffect(() => {
     setMounted(true)
+    import('kanjivg-js/react')
+      .then((m) => m.KanjiCard as unknown as typeof Card)
+      .then(setCard)
+      .catch(() => {})
     let alive = true
     new KanjiVG()
       .getKanji(character)
@@ -621,14 +631,14 @@ function StrokeOrderModel({ character }: { character: string }) {
     }
   }, [character])
 
-  if (!mounted) return null
+  if (!mounted || !Card) return null
 
   return (
     <div className="mb-1 text-center">
       <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--shu)' }}>
         Watch the stroke order
       </p>
-      <KanjiCard
+      <Card
         kanji={character}
         animationOptions={{
           strokeSpeed: 1400,
