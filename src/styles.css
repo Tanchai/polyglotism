@@ -19,6 +19,13 @@
   box-sizing: border-box;
 }
 
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   @apply m-0;
   background: var(--paper);

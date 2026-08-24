@@ -244,12 +244,23 @@ function Listening({ exercise, checked, onSubmit }: any) {
 function Speaking({ exercise, checked, isCorrect, onSubmit }: any) {
   const [recording, setRecording] = useState(false)
   const [heard, setHeard] = useState('')
-  const supported = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)
+  const [error, setError] = useState('')
+  const supported =
+    typeof window !== 'undefined' &&
+    (('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window))
 
   const startRecording = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) return
-    const rec = new SpeechRecognition()
+    setError('')
+    let rec: any
+    try {
+      rec = new SpeechRecognition()
+    } catch {
+      setError(`Speech recognition isn't available in this browser — you can still tap "I said it out loud" to continue.`)
+      return
+    }
     rec.lang = 'ja-JP'
     rec.interimResults = false
     rec.onresult = (e: any) => {
@@ -257,10 +268,22 @@ function Speaking({ exercise, checked, isCorrect, onSubmit }: any) {
       setHeard(transcript)
       onSubmit(normalize(transcript).length > 0)
     }
-    rec.onerror = () => setRecording(false)
+    rec.onerror = (e: any) => {
+      setRecording(false)
+      setError(
+        e?.error === 'not-allowed' || e?.error === 'service-not-allowed'
+          ? 'Microphone access was blocked. Tap "I said it out loud" to continue, or allow mic access in your browser.'
+          : `Couldn't hear you — tap "I said it out loud" to continue.`
+      )
+    }
     rec.onend = () => setRecording(false)
     setRecording(true)
-    rec.start()
+    try {
+      rec.start()
+    } catch {
+      setRecording(false)
+      setError(`Couldn't start the microphone — tap "I said it out loud" to continue.`)
+    }
   }
 
   return (
@@ -286,16 +309,19 @@ function Speaking({ exercise, checked, isCorrect, onSubmit }: any) {
         >
           <Mic className="w-5 h-5" /> {recording ? 'Listening…' : 'Tap to speak'}
         </button>
-      ) : !checked ? (
+      ) : null}
+
+      {!checked && (
         <button
           onClick={() => onSubmit(true)}
-          className="w-full py-4 rounded-2xl font-bold text-white"
-          style={{ background: 'var(--shu)' }}
+          className="w-full py-4 rounded-2xl font-bold text-white mt-3"
+          style={{ background: 'var(--ink)' }}
         >
           I said it out loud
         </button>
-      ) : null}
+      )}
 
+      {error && <p className="mt-3 text-sm text-center" style={{ color: '#b33333' }}>{error}</p>}
       {heard && <p className="mt-3 text-sm text-center" style={{ color: '#8a8272' }}>Heard: "{heard}"</p>}
       {checked && !isCorrect && <p className="mt-3 text-sm text-center">Give it another go next time — repetition builds the muscle memory.</p>}
     </div>
