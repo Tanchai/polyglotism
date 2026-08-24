@@ -94,6 +94,8 @@ function ExerciseBody({
       return <ChainedSentence exercise={exercise} checked={checked} onSubmit={onSubmit} />
     case 'kanji_draw':
       return <KanjiDraw exercise={exercise} checked={checked} onSubmit={onSubmit} />
+    case 'kana':
+      return <Kana exercise={exercise} checked={checked} onSubmit={onSubmit} />
   }
 }
 
@@ -133,6 +135,73 @@ function MultipleChoice({ exercise, checked, onSubmit }: any) {
           disabled={!selected}
           onClick={() => onSubmit(selected === exercise.correctOptionId)}
           className="mt-6 px-6 py-2.5 rounded-xl font-bold text-white disabled:opacity-40"
+          style={{ background: 'var(--ink)' }}
+        >
+          Check
+        </button>
+      )}
+    </div>
+  )
+}
+
+function Kana({ exercise, checked, onSubmit }: any) {
+  const [selected, setSelected] = useState<string | null>(null)
+  const isKanaToRomaji = exercise.mode === 'kana_to_romaji'
+  const scriptColor = exercise.script === 'hiragana' ? 'var(--teal)' : 'var(--plum)'
+
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-widest font-bold mb-2" style={{ color: scriptColor }}>
+        Learn the {exercise.script} · {isKanaToRomaji ? 'sound it out' : 'find the kana'}
+      </p>
+
+      <div
+        className="my-6 p-8 rounded-3xl text-center"
+        style={{ background: 'rgba(217,164,65,0.08)', border: '1px solid rgba(217,164,65,0.25)' }}
+      >
+        {isKanaToRomaji ? (
+          <p className="font-display text-7xl mb-2">{exercise.character}</p>
+        ) : (
+          <p className="font-display text-4xl mb-1">"{exercise.reading}"</p>
+        )}
+        <p className="text-sm" style={{ color: '#8a8272' }}>
+          {isKanaToRomaji ? exercise.hint : `Which ${exercise.script} sounds like "${exercise.reading}"?`}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {exercise.options.map((opt: { id: string; text: string }) => {
+          const isSel = selected === opt.id
+          const showCorrect = checked && opt.id === exercise.correctOptionId
+          const showWrong = checked && isSel && opt.id !== exercise.correctOptionId
+          return (
+            <button
+              key={opt.id}
+              disabled={checked}
+              onClick={() => setSelected(opt.id)}
+              className={`px-5 py-5 rounded-2xl border-2 ${isKanaToRomaji ? 'font-bold text-lg' : 'font-display text-3xl'} transition-colors ${showWrong ? 'animate-shake' : ''}`}
+              style={{
+                borderColor: showCorrect ? 'var(--teal)' : showWrong ? '#b33333' : isSel ? scriptColor : 'var(--line)',
+                background: showCorrect ? 'rgba(29,92,99,0.1)' : showWrong ? 'rgba(179,51,51,0.1)' : 'var(--paper-raised)',
+              }}
+            >
+              {opt.text}
+            </button>
+          )
+        })}
+      </div>
+
+      {checked && (
+        <p className="mt-4 text-center text-sm" style={{ color: '#8a8272' }}>
+          {exercise.character} = "{exercise.reading}"
+        </p>
+      )}
+
+      {!checked && (
+        <button
+          disabled={!selected}
+          onClick={() => onSubmit(selected === exercise.correctOptionId)}
+          className="mt-6 w-full px-6 py-3.5 rounded-xl font-bold text-white disabled:opacity-40"
           style={{ background: 'var(--ink)' }}
         >
           Check

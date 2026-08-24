@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Heart, X, Trophy, Sparkles } from 'lucide-react'
 import { courses } from '@/content/japanese'
 import { ExerciseView } from '@/components/ExerciseView'
-import { getMyStats, recordActivity } from '@/server/stats.functions'
+import { getMyStats, recordActivity, refillHearts, HEART_REFILL_GEM_COST } from '@/server/stats.functions'
 import { completeLesson } from '@/server/progress.functions'
 import { touchReviewItems } from '@/server/review.functions'
 
@@ -38,6 +38,24 @@ function LessonPage() {
   const [quality, setQuality] = useState<Record<string, 0 | 2>>({})
   const [phase, setPhase] = useState<'playing' | 'summary' | 'out-of-hearts'>(hearts <= 0 ? 'out-of-hearts' : 'playing')
   const [finishing, setFinishing] = useState(false)
+  const [refilling, setRefilling] = useState(false)
+  const [refillMsg, setRefillMsg] = useState('')
+
+  const doRefill = async () => {
+    setRefilling(true)
+    setRefillMsg('')
+    const res = await refillHearts()
+    if (res.ok) {
+      navigate({ to: '/learn' })
+    } else if (res.reason === 'not_enough_gems') {
+      setRefillMsg(`You need ${HEART_REFILL_GEM_COST} gems — you have ${res.stats.gems}.`)
+    } else if (res.reason === 'already_full') {
+      navigate({ to: '/learn' })
+    } else {
+      setRefillMsg('Something went wrong refilling your hearts.')
+    }
+    setRefilling(false)
+  }
 
   const total = lesson.exercises.length
   const current = lesson.exercises[index]
@@ -99,9 +117,20 @@ function LessonPage() {
           <Heart className="w-10 h-10" style={{ color: '#d84545' }} />
         </div>
         <h1 className="font-display text-3xl mb-3">Out of hearts</h1>
-        <p className="mb-8" style={{ color: '#7a7362' }}>
-          Take a short break — your hearts refill over time, or you can grab a free refill to keep going.
+        <p className="mb-6" style={{ color: '#7a7362' }}>
+          Complete lessons to earn gems, then spend {HEART_REFILL_GEM_COST} to refill.
         </p>
+        <button
+          onClick={doRefill}
+          disabled={refilling}
+          className="w-full px-6 py-3.5 rounded-xl font-bold text-white mb-3 disabled:opacity-60"
+          style={{ background: 'var(--shu)' }}
+        >
+          {refilling ? 'Refilling…' : `Refill hearts · ${HEART_REFILL_GEM_COST} gems`}
+        </button>
+        {refillMsg && (
+          <p className="mb-3 text-sm" style={{ color: '#b33333' }}>{refillMsg}</p>
+        )}
         <Link to="/learn" className="px-6 py-3 rounded-xl font-bold text-white inline-block" style={{ background: 'var(--ink)' }}>
           Back to the path
         </Link>

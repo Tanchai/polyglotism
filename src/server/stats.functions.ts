@@ -55,13 +55,26 @@ export const recordActivity = createServerFn({ method: 'POST' })
     return updated
   })
 
+export const HEART_REFILL_GEM_COST = 10
+
 export const refillHearts = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
   .handler(async ({ context }) => {
+    const stats = await ensureStats(context.user.id)
+    if (stats.gems < HEART_REFILL_GEM_COST) {
+      return { ok: false as const, reason: 'not_enough_gems', stats }
+    }
+    if (stats.hearts >= 5) {
+      return { ok: false as const, reason: 'already_full', stats }
+    }
     const [updated] = await db
       .update(userStats)
-      .set({ hearts: 5, updatedAt: new Date() })
+      .set({
+        hearts: 5,
+        gems: stats.gems - HEART_REFILL_GEM_COST,
+        updatedAt: new Date(),
+      })
       .where(eq(userStats.userId, context.user.id))
       .returning()
-    return updated
+    return { ok: true as const, reason: 'refilled', stats: updated }
   })
